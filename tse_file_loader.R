@@ -1,5 +1,8 @@
 require(data.table)
 
+#ignore scientific notation
+options(scipen=999)
+
 ####################
 # load all files on specific directory
 ####################
