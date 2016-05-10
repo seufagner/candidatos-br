@@ -1,5 +1,4 @@
 require(data.table)
-
 #ignore scientific notation
 options(scipen=999)
 
