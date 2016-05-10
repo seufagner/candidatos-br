@@ -3,12 +3,7 @@ library(dplyr)
 library(reshape2)
 source("tse_file_loader.R")
 
-
-
-##################
-## load datasets
-################
-
+#### load datasets
 bens_cand_2012_path <- "raw_data/bem_candidato_2012/"
 cand_2012_path <- "raw_data/consulta_cand_2012/"
 leg_2012_path <- "raw_data/consulta_legendas_2012/"
@@ -26,8 +21,8 @@ legendas_2014_df <- load_files_on(leg_2014_path, with_col_names = cols_legenda)
 #### candidatos por raça 2014
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
 pie(candidatos_por_raca_2014$x, labels = candidatos_por_raca_2014$Group.1, main="Candidatos por raça 2014")
+
 rm(candidatos_por_raca_2014)
-####
 
 #### candidato max despesa campanha 2012x2014
 calc_despesa = function(candidatos_df) {
@@ -51,13 +46,13 @@ ggplot(melted, aes(x=x, y=value, fill=variable)) +
   geom_bar(stat = "identity", position = "identity") +
   ggtitle("Gasto max campanha por sigla")
 
-rm(overlap_bars_df)
-rm(melted)
-rm(siglas)
 rm(despesa_2012)
 rm(despesa_2014)
-####
-#prevalencia candidatos eleicao municipal x federal
+rm(siglas)
+rm(overlap_bars_df)
+rm(melted)
+
+#### prevalencia candidatos eleicao municipal x federal
 candidatos_partido = function(candidatos_df) {
   candidatos_df %>%
     group_by(SIGLA_PARTIDO) %>%
@@ -77,11 +72,11 @@ ggplot(melted,aes(x=x, y=value, fill=variable)) +
   geom_bar(stat="identity", position = "dodge") +
   ggtitle("Candidatos por eleição")
 
-rm(overlap_bars_df)
-rm(melted)
-rm(siglas)
 rm(cand_partido_2012)
 rm(cand_partido_2014)
+rm(siglas)
+rm(overlap_bars_df)
+rm(melted)
 
 #### partido x bens declarados
 partido_bens = function(candidatos_df, bens_df) {
@@ -109,4 +104,6 @@ ggplot(partido_bens_2012, aes(x=SIGLA_PARTIDO, y=TOTAL_PARTIDO)) +
   geom_bar(stat="identity", fill="#FF9999") +
   ggtitle("Bens por partido 2012")
 
+rm(partido_bens_2012)
+rm(partido_bens_2014)
 ###
