@@ -3,6 +3,8 @@ library(dplyr)
 library(reshape2)
 source("tse_file_loader.R")
 
+
+
 ##################
 ## load datasets
 ################
@@ -28,12 +30,14 @@ rm(candidatos_por_raca_2014)
 ####
 
 #### candidato max despesa campanha 2012x2014
-despesa_2014 <- candidatos_2014_df %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(total = sum(DESPESA_MAX_CAMPANHA)/n(), freq = n())
-despesa_2012 <- candidatos_2012_df %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(total = sum(DESPESA_MAX_CAMPANHA)/n(),freq = n())
+calc_despesa = function(candidatos_df) {
+  candidatos_df %>%
+    group_by(SIGLA_PARTIDO) %>%
+    summarise(total = sum(DESPESA_MAX_CAMPANHA)/n(), freq = n())
+}
+
+despesa_2014 <- calc_despesa(candidatos_2014_df)
+despesa_2012 <- calc_despesa(candidatos_2012_df)
 
 siglas <- intersect(despesa_2014$SIGLA_PARTIDO, despesa_2012$SIGLA_PARTIDO)
 
@@ -54,16 +58,16 @@ rm(despesa_2012)
 rm(despesa_2014)
 ####
 #prevalencia candidatos eleicao municipal x federal
-n_cand_por_sigla_2012 <- candidatos_2012_df %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(total = n())
+candidatos_partido = function(candidatos_df) {
+  candidatos_df %>%
+    group_by(SIGLA_PARTIDO) %>%
+    summarise(total = n())
+}
+cand_partido_2012 <- candidatos_partido(candidatos_2012_df)
+cand_partido_2014 <- candidatos_partido(candidatos_2014_df)
 
-n_cand_por_sigla_2014 <- candidatos_2014_df %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(total = n())
-
-siglas <- intersect(n_cand_por_sigla_2014$SIGLA_PARTIDO, n_cand_por_sigla_2012$SIGLA_PARTIDO)
-overlap_bars_df <- data.frame(x=siglas, municipais_2012=n_cand_por_sigla_2012[SIGLA_PARTIDO %in% siglas]$total, federais_2014=n_cand_por_sigla_2014[SIGLA_PARTIDO %in% siglas]$total)
+siglas <- intersect(cand_partido_2014$SIGLA_PARTIDO, cand_partido_2012$SIGLA_PARTIDO)
+overlap_bars_df <- data.frame(x=siglas, municipais_2012=cand_partido_2012[SIGLA_PARTIDO %in% siglas]$total, federais_2014=cand_partido_2014[SIGLA_PARTIDO %in% siglas]$total)
 melted <- melt(overlap_bars_df)
 
 ggplot(melted,aes(x=x, y=value, fill=variable)) + 
@@ -76,31 +80,25 @@ ggplot(melted,aes(x=x, y=value, fill=variable)) +
 rm(overlap_bars_df)
 rm(melted)
 rm(siglas)
-rm(n_cand_por_sigla_2012)
-rm(n_cand_por_sigla_2014)
+rm(cand_partido_2012)
+rm(cand_partido_2014)
 
 #### partido x bens declarados
-candidato_partido_2012 <- candidatos_2012_df %>%
-  select(SEQUENCIAL_CANDIDATO, NOME_CANDIDATO, NUMERO_PARTIDO, SIGLA_PARTIDO, ANO_ELEICAO, SIGLA_UF, SIGLA_UE, CODIGO_CARGO, DESCRICAO_CARGO)
-candidato_partido_2014 <- candidatos_2014_df %>%
-  select(SEQUENCIAL_CANDIDATO, NOME_CANDIDATO, NUMERO_PARTIDO, SIGLA_PARTIDO, ANO_ELEICAO, SIGLA_UF, SIGLA_UE, CODIGO_CARGO, DESCRICAO_CARGO)
+partido_bens = function(candidatos_df, bens_df) {
+  candidato_partido <- candidatos_df %>%
+    select(SEQUENCIAL_CANDIDATO, NOME_CANDIDATO, NUMERO_PARTIDO, SIGLA_PARTIDO, ANO_ELEICAO, SIGLA_UF, SIGLA_UE, CODIGO_CARGO, DESCRICAO_CARGO)
+  candidato_bens_total <- bens_df %>% 
+    group_by(SQ_CANDIDATO) %>%
+    summarise(total = sum(VALOR_BEM),freq = n())
+  candidato_bens <- merge(candidato_partido, candidato_bens_total, by.x = "SEQUENCIAL_CANDIDATO", by.y = "SQ_CANDIDATO")
+  
+  candidato_bens %>%
+    group_by(SIGLA_PARTIDO) %>%
+    summarise(TOTAL_PARTIDO = sum(total),freq = n())  
+}
 
-candidato_bens_total_2012 <- bens_2012_df %>% 
-  group_by(SQ_CANDIDATO) %>%
-  summarise(total = sum(VALOR_BEM),freq = n())
-candidato_bens_total_2014 <- bens_2014_df %>% 
-  group_by(SQ_CANDIDATO) %>%
-  summarise(total = sum(VALOR_BEM),freq = n())
-
-candidato_bens_2012 <- merge(candidato_partido_2012, candidato_bens_total_2012, by.x = "SEQUENCIAL_CANDIDATO", by.y = "SQ_CANDIDATO")
-candidato_bens_2014 <- merge(candidato_partido_2014, candidato_bens_total_2014, by.x = "SEQUENCIAL_CANDIDATO", by.y = "SQ_CANDIDATO")
-
-partido_bens_2012 <- candidato_bens_2012 %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(TOTAL_PARTIDO = sum(total),freq = n())
-partido_bens_2014 <- candidato_bens_2014 %>%
-  group_by(SIGLA_PARTIDO) %>%
-  summarise(TOTAL_PARTIDO = sum(total),freq = n())
+partido_bens_2012 <- partido_bens(candidatos_2012_df, bens_2012_df)
+partido_bens_2014 <- partido_bens(candidatos_2014_df, bens_2014_df)
 
 pie(partido_bens_2012$TOTAL_PARTIDO, partido_bens_2012$SIGLA_PARTIDO, mmain = "Total bens por partido 2012")
 pie(partido_bens_2014$TOTAL_PARTIDO, partido_bens_2014$SIGLA_PARTIDO, mmain = "Total bens por partido 2014")
