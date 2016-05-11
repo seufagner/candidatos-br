@@ -4,19 +4,18 @@ library(reshape2)
 source("tse_file_loader.R")
 
 #### load datasets
-bens_cand_2012_path <- "raw_data/bem_candidato_2012/"
-cand_2012_path <- "raw_data/consulta_cand_2012/"
-leg_2012_path <- "raw_data/consulta_legendas_2012/"
-bens_cand_2014_path <- "raw_data/bem_candidato_2014/"
-cand_2014_path <- "raw_data/consulta_cand_2014/"
-leg_2014_path <- "raw_data/consulta_legendas_2014/"
-
-bens_2012_df <- load_files_on(bens_cand_2012_path, with_col_names = cols_bem_candidato)
-candidatos_2012_df <- load_files_on(cand_2012_path, with_col_names = cols_consulta_candidato_2012)
-legendas_2012_df <- load_files_on(leg_2012_path, with_col_names = cols_legenda)
-bens_2014_df <- load_files_on(bens_cand_2014_path, with_col_names = cols_bem_candidato)
-candidatos_2014_df <- load_files_on(cand_2014_path, with_col_names = cols_consulta_candidato_2014)
-legendas_2014_df <- load_files_on(leg_2014_path, with_col_names = cols_legenda)
+bens_2008_df <- load_files_on("bem_candidato_2008", with_col_names = cols_bem_candidato)
+candidatos_2008_df <- load_files_on("consulta_cand_2008", with_col_names = cols_consulta_candidato_2010)
+legendas_2008_df <- load_files_on("consulta_legendas_2008", with_col_names = cols_legenda)
+bens_2010_df <- load_files_on("bem_candidato_2010", with_col_names = cols_bem_candidato)
+candidatos_2010_df <- load_files_on("consulta_cand_2010", with_col_names = cols_consulta_candidato_2010)
+legendas_2010_df <- load_files_on("consulta_legendas_2010", with_col_names = cols_legenda)
+bens_2012_df <- load_files_on("bem_candidato_2012", with_col_names = cols_bem_candidato)
+candidatos_2012_df <- load_files_on("consulta_cand_2012", with_col_names = cols_consulta_candidato_2012)
+legendas_2012_df <- load_files_on("consulta_legendas_2012", with_col_names = cols_legenda)
+bens_2014_df <- load_files_on("bem_candidato_2014", with_col_names = cols_bem_candidato)
+candidatos_2014_df <- load_files_on("consulta_cand_2014", with_col_names = cols_consulta_candidato_2014)
+legendas_2014_df <- load_files_on("consulta_legendas_2014", with_col_names = cols_legenda)
 
 #### candidatos por raça 2014
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
@@ -24,15 +23,20 @@ pie(candidatos_por_raca_2014$x, labels = candidatos_por_raca_2014$Group.1, main=
 
 rm(candidatos_por_raca_2014)
 
-#### candidato max despesa campanha 2012x2014
+#### candidato max despesa campanha 
 calc_despesa = function(candidatos_df) {
   candidatos_df %>%
     group_by(SIGLA_PARTIDO) %>%
-    summarise(total = sum(DESPESA_MAX_CAMPANHA)/n(), freq = n())
+    summarise(total = sum(as.numeric(DESPESA_MAX_CAMPANHA))/n(), freq = n())
 }
 
-despesa_2014 <- calc_despesa(candidatos_2014_df)
+#nao disponivel
+#despesa_2008 <- calc_despesa(candidatos_2008_df)
+#nao disponivel
+#despesa_2010 <- calc_despesa(candidatos_2010_df)
 despesa_2012 <- calc_despesa(candidatos_2012_df)
+despesa_2014 <- calc_despesa(candidatos_2014_df)
+
 
 siglas <- intersect(despesa_2014$SIGLA_PARTIDO, despesa_2012$SIGLA_PARTIDO)
 
@@ -58,11 +62,15 @@ candidatos_partido = function(candidatos_df) {
     group_by(SIGLA_PARTIDO) %>%
     summarise(total = n())
 }
+cand_partido_2008 <- candidatos_partido(candidatos_2008_df)
+cand_partido_2010 <- candidatos_partido(candidatos_2010_df)
 cand_partido_2012 <- candidatos_partido(candidatos_2012_df)
 cand_partido_2014 <- candidatos_partido(candidatos_2014_df)
 
 siglas <- intersect(cand_partido_2014$SIGLA_PARTIDO, cand_partido_2012$SIGLA_PARTIDO)
-overlap_bars_df <- data.frame(x=siglas, municipais_2012=cand_partido_2012[SIGLA_PARTIDO %in% siglas]$total, federais_2014=cand_partido_2014[SIGLA_PARTIDO %in% siglas]$total)
+siglas <- intersect(siglas, candidatos_2008_df$SIGLA_PARTIDO)
+siglas <- intersect(siglas, candidatos_2010_df$SIGLA_PARTIDO)
+overlap_bars_df <- data.frame(x=siglas, municipais_2008=cand_partido_2008[SIGLA_PARTIDO %in% siglas]$total, municipais_2012=cand_partido_2012[SIGLA_PARTIDO %in% siglas]$total, federais_2014=cand_partido_2014[SIGLA_PARTIDO %in% siglas]$total, federais_2010=cand_partido_2010[SIGLA_PARTIDO %in% siglas]$total)
 melted <- melt(overlap_bars_df)
 
 ggplot(melted,aes(x=x, y=value, fill=variable)) + 
@@ -72,6 +80,8 @@ ggplot(melted,aes(x=x, y=value, fill=variable)) +
   geom_bar(stat="identity", position = "dodge") +
   ggtitle("Candidatos por eleição")
 
+rm(cand_partido_2008)
+rm(cand_partido_2010)
 rm(cand_partido_2012)
 rm(cand_partido_2014)
 rm(siglas)
@@ -106,4 +116,49 @@ ggplot(partido_bens_2012, aes(x=SIGLA_PARTIDO, y=TOTAL_PARTIDO)) +
 
 rm(partido_bens_2012)
 rm(partido_bens_2014)
-###
+
+### quem mudou de partido e se elegeu?
+eleicoes_municipais <- intersect(candidatos_2008_df$CPF_CANDIDATO, candidatos_2012_df$CPF_CANDIDATO)
+eleicoes_federais <- intersect(candidatos_2010_df$CPF_CANDIDATO, candidatos_2014_df$CPF_CANDIDATO)
+
+candidato_partido = function(candidato_df, eleicao_candidato) {
+  candidato_df %>%
+    select(as.numeric(CPF_CANDIDATO), NOME_CANDIDATO, SIGLA_PARTIDO, DESC_SIT_TOT_TURNO) %>%
+    filter(CPF_CANDIDATO %in% eleicao_candidato & DESC_SIT_TOT_TURNO != "#NULO#" & DESC_SIT_TOT_TURNO != "#NE#")
+}
+
+# estiveram em ambas as eleicoes e se elegeram ou nao
+candidato_partido_2008 <- candidato_partido(candidatos_2008_df, eleicoes_municipais)
+candidato_partido_2012 <- candidato_partido(candidatos_2012_df, eleicoes_municipais)
+candidato_partido_2010 <- candidato_partido(candidatos_2010_df, eleicoes_federais)
+candidato_partido_2014 <- candidato_partido(candidatos_2014_df, eleicoes_federais)
+
+candidatos_municipais <- merge(candidato_partido_2008, candidato_partido_2012, by.x = "CPF_CANDIDATO", by.y = "CPF_CANDIDATO")
+candidatos_federais <- merge(candidato_partido_2010, candidato_partido_2014, by.x = "CPF_CANDIDATO", by.y = "CPF_CANDIDATO")
+
+mudanca_partido_federais <- candidatos_federais %>%
+  select(NOME_CANDIDATO.x, SIGLA_PARTIDO.x, SIGLA_PARTIDO.y, DESC_SIT_TOT_TURNO.x, DESC_SIT_TOT_TURNO.y) %>%  
+  filter(SIGLA_PARTIDO.x != SIGLA_PARTIDO.y)
+mudanca_partido_federais$TRANSICAO_PARTIDOS <- with(mudanca_partido_federais, paste0(DESC_SIT_TOT_TURNO.x, "-", DESC_SIT_TOT_TURNO.y))
+mudanca_partido_federais$TRANSICAO_RESULTADOS <- with(mudanca_partido_federais, paste0(DESC_SIT_TOT_TURNO.x, "-", DESC_SIT_TOT_TURNO.y))
+
+x <- mudanca_partido_federais %>%
+  group_by(SIGLA_PARTIDO.x, SIGLA_PARTIDO.y,TRANSICAO_PARTIDOS, TRANSICAO_RESULTADOS,DESC_SIT_TOT_TURNO.x, DESC_SIT_TOT_TURNO.y) %>%
+  summarise(COUNT = sum(ifelse(DESC_SIT_TOT_TURNO.x != DESC_SIT_TOT_TURNO.y, 1, 0)),freq = n()) %>% 
+  select(SIGLA_PARTIDO.x, SIGLA_PARTIDO.y, TRANSICAO_PARTIDOS, TRANSICAO_RESULTADOS, COUNT, DESC_SIT_TOT_TURNO.x, DESC_SIT_TOT_TURNO.y) %>%
+  filter(COUNT != 0)
+
+ingresso_pt <- x %>%
+  filter(SIGLA_PARTIDO.y == "PT" & (DESC_SIT_TOT_TURNO.x == "NÃO ELEITO" | DESC_SIT_TOT_TURNO.x == "SUPLENTE"))
+ingresso_pmdb <- x %>%
+  filter(SIGLA_PARTIDO.y == "PMDB" & (DESC_SIT_TOT_TURNO.x == "NÃO ELEITO" | DESC_SIT_TOT_TURNO.x == "SUPLENTE"))
+
+rm(eleicoes_federais)
+rm(eleicoes_municipais)
+rm(x)
+rm(ingresso_pt)
+rm(ingresso_pmdb)
+rm(candidato_partido_2008)
+rm(candidato_partido_2012)
+rm(candidato_partido_2010)
+rm(candidato_partido_2014)
