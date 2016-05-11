@@ -18,25 +18,28 @@ candidatos_2014_df <- load_files_on("consulta_cand_2014", with_col_names = cols_
 legendas_2014_df <- load_files_on("consulta_legendas_2014", with_col_names = cols_legenda)
 
 #### candidatos por ocupacao
-plot_candidato_ocupacao <- function(df, year, legends_at) {
-  candidatos_por_ocupacao <- aggregate(as.numeric(df$CODIGO_OCUPACAO), by=list(df$DESCRICAO_OCUPACAO), FUN=sum, na.exclude(T)) %>%
-    filter(!is.na(x)) 
-  candidatos_por_ocupacao_maxs <- tail(candidatos_por_ocupacao[which(candidatos_por_ocupacao$x >= 100000),] %>%
-                                         arrange(x), n = 10)
+pie_candidato_ocupacao <- function(df, year, legends_at) {
+  candidatos_por_ocupacao <- df %>% 
+    group_by(DESCRICAO_OCUPACAO) %>% 
+    summarise(total = sum(n())) %>%
+    arrange(total) %>%
+    filter(!is.na(total)) 
+  
+  candidatos_por_ocupacao_maxs <- tail(candidatos_por_ocupacao, n = 10)
   
   png(file = paste0("plots/candidatos_ocupacao_",year,".png"),
       width = 800, height = 800, units = "px")
-  title <- paste0("Top 10 candidatos por ocupação ", year, " (total de ", sum(candidatos_por_ocupacao$x), " candidatos)")
-  pie(candidatos_por_ocupacao_maxs$x, labels = candidatos_por_ocupacao_maxs$x, main = title, col = rainbow(length(candidatos_por_ocupacao_maxs$x)))    
-  legend(legends_at, candidatos_por_ocupacao_maxs$Group.1, cex = 0.8,
-         fill = rainbow(length(candidatos_por_ocupacao_maxs$x)))
+  title <- paste0("Top 10 candidatos por ocupação ", year, " (total de ", sum(candidatos_por_ocupacao$total), " candidatos)")
+  pie(candidatos_por_ocupacao_maxs$total, labels = candidatos_por_ocupacao_maxs$total, main = title, col = rainbow(length(candidatos_por_ocupacao_maxs$total)))
+  legend(legends_at, candidatos_por_ocupacao_maxs$DESCRICAO_OCUPACAO, cex = 0.8,
+         fill = rainbow(length(candidatos_por_ocupacao_maxs$total)))
   dev.off()  
 }
 
-plot_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "bottomright")
-plot_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomleft")
-plot_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomright")
-plot_candidato_ocupacao(candidatos_2008_df, "2008", legends_at = "bottomleft")
+pie_candidato_ocupacao(candidatos_2008_df, "2008", legends_at = "bottomleft")
+pie_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "bottomright")
+pie_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomleft")
+pie_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomright")
 
 #### candidatos por raça 2014 (unico ano com raça)
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
