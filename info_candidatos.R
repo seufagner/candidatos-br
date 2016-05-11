@@ -17,10 +17,36 @@ bens_2014_df <- load_files_on("bem_candidato_2014", with_col_names = cols_bem_ca
 candidatos_2014_df <- load_files_on("consulta_cand_2014", with_col_names = cols_consulta_candidato_2014)
 legendas_2014_df <- load_files_on("consulta_legendas_2014", with_col_names = cols_legenda)
 
-#### candidatos por raça 2014
-candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
-pie(candidatos_por_raca_2014$x, labels = candidatos_por_raca_2014$Group.1, main="Candidatos por raça 2014")
+#### candidatos por ocupacao
+plot_candidato_ocupacao <- function(df, year, legends_at) {
+  candidatos_por_ocupacao <- aggregate(as.numeric(df$CODIGO_OCUPACAO), by=list(df$DESCRICAO_OCUPACAO), FUN=sum, na.exclude(T)) %>%
+    filter(!is.na(x)) 
+  candidatos_por_ocupacao_maxs <- tail(candidatos_por_ocupacao[which(candidatos_por_ocupacao$x >= 100000),] %>%
+                                         arrange(x), n = 10)
+  
+  png(file = paste0("plots/candidatos_ocupacao_",year,".png"),
+      width = 800, height = 800, units = "px")
+  title <- paste0("Top 10 candidatos por ocupação ", year, " (total de ", sum(candidatos_por_ocupacao$x), " candidatos)")
+  pie(candidatos_por_ocupacao_maxs$x, labels = candidatos_por_ocupacao_maxs$x, main = title, col = rainbow(length(candidatos_por_ocupacao_maxs$x)))    
+  legend(legends_at, candidatos_por_ocupacao_maxs$Group.1, cex = 0.8,
+         fill = rainbow(length(candidatos_por_ocupacao_maxs$x)))
+  dev.off()  
+}
 
+plot_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "bottomright")
+plot_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomleft")
+plot_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomright")
+plot_candidato_ocupacao(candidatos_2008_df, "2008", legends_at = "bottomleft")
+
+#### candidatos por raça 2014 (unico ano com raça)
+candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
+percents <- paste0(round(100*candidatos_por_raca_2014$x/sum(candidatos_por_raca_2014$x), 1), "%")
+
+png(file = "plots/candidatos_raca_2014.png")
+pie(candidatos_por_raca_2014$x, labels = percents, main = "Candidatos por raça 2014",col = rainbow(length(candidatos_por_raca_2014$x)))
+legend("topleft", candidatos_por_raca_2014$Group.1, cex = 0.8,
+       fill = rainbow(length(candidatos_por_raca_2014$x)))
+dev.off()
 rm(candidatos_por_raca_2014)
 
 #### candidato max despesa campanha 
@@ -155,6 +181,7 @@ ingresso_pmdb <- x %>%
 
 rm(eleicoes_federais)
 rm(eleicoes_municipais)
+rm(mudanca_partido_federais)
 rm(x)
 rm(ingresso_pt)
 rm(ingresso_pmdb)
