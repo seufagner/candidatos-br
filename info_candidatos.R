@@ -37,9 +37,9 @@ pie_candidato_ocupacao <- function(df, year, legends_at) {
 }
 
 pie_candidato_ocupacao(candidatos_2008_df, "2008", legends_at = "bottomleft")
-pie_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "bottomright")
-pie_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomleft")
-pie_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomright")
+pie_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "topright")
+pie_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomright")
+pie_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomleft")
 
 #### candidatos por raça 2014 (unico ano com raça)
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
@@ -131,17 +131,13 @@ partido_bens = function(candidatos_df, bens_df) {
     summarise(TOTAL_PARTIDO = sum(total),freq = n())  
 }
 
+partido_bens_2008 <- partido_bens(candidatos_2008_df, bens_2008_df)
+partido_bens_2010 <- partido_bens(candidatos_2010_df, bens_2010_df)
 partido_bens_2012 <- partido_bens(candidatos_2012_df, bens_2012_df)
 partido_bens_2014 <- partido_bens(candidatos_2014_df, bens_2014_df)
 
-pie(partido_bens_2012$TOTAL_PARTIDO, partido_bens_2012$SIGLA_PARTIDO, mmain = "Total bens por partido 2012")
-pie(partido_bens_2014$TOTAL_PARTIDO, partido_bens_2014$SIGLA_PARTIDO, mmain = "Total bens por partido 2014")
-
-ggplot(partido_bens_2012, aes(x=SIGLA_PARTIDO, y=TOTAL_PARTIDO)) +
-  theme(legend.title = element_blank(),
-        axis.text.x = element_text(angle = 90, hjust = 1)) +
-  geom_bar(stat="identity", fill="#FF9999") +
-  ggtitle("Bens por partido 2012")
+pie(partido_bens_2012$TOTAL_PARTIDO, partido_bens_2012$SIGLA_PARTIDO, main = "Total bens por partido 2012")
+pie(partido_bens_2014$TOTAL_PARTIDO, partido_bens_2014$SIGLA_PARTIDO, main = "Total bens por partido 2014")
 
 rm(partido_bens_2012)
 rm(partido_bens_2014)
