@@ -3,44 +3,6 @@ library(dplyr)
 library(reshape2)
 source("tse_file_loader.R")
 
-#### load datasets
-bens_2008_df <- load_files_on("bem_candidato_2008", with_col_names = cols_bem_candidato)
-candidatos_2008_df <- load_files_on("consulta_cand_2008", with_col_names = cols_consulta_candidato_2010)
-legendas_2008_df <- load_files_on("consulta_legendas_2008", with_col_names = cols_legenda)
-bens_2010_df <- load_files_on("bem_candidato_2010", with_col_names = cols_bem_candidato)
-candidatos_2010_df <- load_files_on("consulta_cand_2010", with_col_names = cols_consulta_candidato_2010)
-legendas_2010_df <- load_files_on("consulta_legendas_2010", with_col_names = cols_legenda)
-bens_2012_df <- load_files_on("bem_candidato_2012", with_col_names = cols_bem_candidato)
-candidatos_2012_df <- load_files_on("consulta_cand_2012", with_col_names = cols_consulta_candidato_2012)
-legendas_2012_df <- load_files_on("consulta_legendas_2012", with_col_names = cols_legenda)
-bens_2014_df <- load_files_on("bem_candidato_2014", with_col_names = cols_bem_candidato)
-candidatos_2014_df <- load_files_on("consulta_cand_2014", with_col_names = cols_consulta_candidato_2014)
-legendas_2014_df <- load_files_on("consulta_legendas_2014", with_col_names = cols_legenda)
-
-#### candidatos por ocupacao
-pie_candidato_ocupacao <- function(df, year, legends_at) {
-  candidatos_por_ocupacao <- df %>% 
-    group_by(DESCRICAO_OCUPACAO) %>% 
-    summarise(total = sum(n())) %>%
-    arrange(total) %>%
-    filter(!is.na(total)) 
-  
-  candidatos_por_ocupacao_maxs <- tail(candidatos_por_ocupacao, n = 10)
-  
-  png(file = paste0("plots/candidatos_ocupacao_",year,".png"),
-      width = 800, height = 800, units = "px")
-  title <- paste0("Top 10 candidatos por ocupação ", year, " (total de ", sum(candidatos_por_ocupacao$total), " candidatos)")
-  pie(candidatos_por_ocupacao_maxs$total, labels = candidatos_por_ocupacao_maxs$total, main = title, col = rainbow(length(candidatos_por_ocupacao_maxs$total)))
-  legend(legends_at, candidatos_por_ocupacao_maxs$DESCRICAO_OCUPACAO, cex = 0.8,
-         fill = rainbow(length(candidatos_por_ocupacao_maxs$total)))
-  dev.off()  
-}
-
-pie_candidato_ocupacao(candidatos_2008_df, "2008", legends_at = "bottomleft")
-pie_candidato_ocupacao(candidatos_2010_df, "2010", legends_at = "topright")
-pie_candidato_ocupacao(candidatos_2012_df, "2012", legends_at = "bottomright")
-pie_candidato_ocupacao(candidatos_2014_df, "2014", legends_at = "bottomleft")
-
 #### candidatos por raça 2014 (unico ano com raça)
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
 percents <- paste0(round(100*candidatos_por_raca_2014$x/sum(candidatos_por_raca_2014$x), 1), "%")
@@ -118,17 +80,24 @@ rm(overlap_bars_df)
 rm(melted)
 
 #### partido x bens declarados
-partido_bens = function(candidatos_df, bens_df) {
+
+candidato_bens = function(candidatos_df, bens_df) {
   candidato_partido <- candidatos_df %>%
-    select(SEQUENCIAL_CANDIDATO, NOME_CANDIDATO, NUMERO_PARTIDO, SIGLA_PARTIDO, ANO_ELEICAO, SIGLA_UF, SIGLA_UE, CODIGO_CARGO, DESCRICAO_CARGO)
+    select(SEQUENCIAL_CANDIDATO, NOME_CANDIDATO, ANO_ELEICAO, NUMERO_PARTIDO, SIGLA_PARTIDO, ANO_ELEICAO, SIGLA_UF, SIGLA_UE, CODIGO_CARGO, DESCRICAO_CARGO)
+  
   candidato_bens_total <- bens_df %>% 
     group_by(SQ_CANDIDATO) %>%
-    summarise(total = sum(VALOR_BEM),freq = n())
-  candidato_bens <- merge(candidato_partido, candidato_bens_total, by.x = "SEQUENCIAL_CANDIDATO", by.y = "SQ_CANDIDATO")
+    summarise(total = sum(VALOR_BEM), freq = n())
+  
+  merge(x = candidato_partido, y = candidato_bens_total, by.x = "SEQUENCIAL_CANDIDATO", by.y = "SQ_CANDIDATO")
+}
+
+partido_bens = function(candidatos_df, bens_df) {
+  candidato_bens <- candidato_bens(candidatos_df, bens_df)
   
   candidato_bens %>%
-    group_by(SIGLA_PARTIDO) %>%
-    summarise(TOTAL_PARTIDO = sum(total),freq = n())  
+    group_by(SIGLA_PARTIDO, ANO_ELEICAO) %>%
+    summarise(TOTAL_PARTIDO = sum(total), TOTAL_MEDIAN_PARTIDO = median(total), freq = n())  
 }
 
 partido_bens_2008 <- partido_bens(candidatos_2008_df, bens_2008_df)
@@ -136,9 +105,38 @@ partido_bens_2010 <- partido_bens(candidatos_2010_df, bens_2010_df)
 partido_bens_2012 <- partido_bens(candidatos_2012_df, bens_2012_df)
 partido_bens_2014 <- partido_bens(candidatos_2014_df, bens_2014_df)
 
+pie(partido_bens_2008$TOTAL_PARTIDO, partido_bens_2008$SIGLA_PARTIDO, main = "Total bens por partido 2008")
+pie(partido_bens_2010$TOTAL_PARTIDO, partido_bens_2010$SIGLA_PARTIDO, main = "Total bens por partido 2010")
 pie(partido_bens_2012$TOTAL_PARTIDO, partido_bens_2012$SIGLA_PARTIDO, main = "Total bens por partido 2012")
 pie(partido_bens_2014$TOTAL_PARTIDO, partido_bens_2014$SIGLA_PARTIDO, main = "Total bens por partido 2014")
 
+pb_2008 <- partido_bens_2008 %>%
+  group_by(SIGLA_PARTIDO) %>%
+  select(ANO_ELEICAO, SIGLA_PARTIDO, TOTAL_PARTIDO, TOTAL_MEDIAN_PARTIDO) %>%
+  filter(SIGLA_PARTIDO == "PT" || SIGLA_PARTIDO == "PMDB" || SIGLA_PARTIDO == "DEM" || SIGLA_PARTIDO == "PP" || SIGLA_PARTIDO == "PSDB") %>%
+  arrange(SIGLA_PARTIDO)
+
+pb_2010 <- partido_bens_2010 %>%
+  group_by(SIGLA_PARTIDO) %>%
+  select(ANO_ELEICAO, SIGLA_PARTIDO, TOTAL_PARTIDO, TOTAL_MEDIAN_PARTIDO) %>%
+  filter(SIGLA_PARTIDO == "PT" || SIGLA_PARTIDO == "PMDB" || SIGLA_PARTIDO == "DEM" || SIGLA_PARTIDO == "PP" || SIGLA_PARTIDO == "PSDB") %>%
+  arrange(SIGLA_PARTIDO)
+
+
+pb_2012 <- partido_bens_2012 %>%
+  group_by(SIGLA_PARTIDO) %>%
+  select(ANO_ELEICAO, SIGLA_PARTIDO, TOTAL_PARTIDO, TOTAL_MEDIAN_PARTIDO) %>%
+  filter(SIGLA_PARTIDO == "PT" || SIGLA_PARTIDO == "PMDB" || SIGLA_PARTIDO == "DEM" || SIGLA_PARTIDO == "PP" || SIGLA_PARTIDO == "PSDB") %>% 
+  arrange(SIGLA_PARTIDO)
+  
+pb_2014 <- partido_bens_2014 %>%
+  group_by(SIGLA_PARTIDO) %>%
+  select(ANO_ELEICAO, SIGLA_PARTIDO, TOTAL_PARTIDO, TOTAL_MEDIAN_PARTIDO) %>%
+  filter(SIGLA_PARTIDO == "PT" || SIGLA_PARTIDO == "PMDB" || SIGLA_PARTIDO == "DEM" || SIGLA_PARTIDO == "PP" || SIGLA_PARTIDO == "PSDB") %>% 
+  arrange(SIGLA_PARTIDO)
+
+rm(partido_bens_2008)
+rm(partido_bens_2010)
 rm(partido_bens_2012)
 rm(partido_bens_2014)
 
@@ -154,6 +152,7 @@ candidato_partido = function(candidato_df, eleicao_candidato) {
 
 # estiveram em ambas as eleicoes e se elegeram ou nao
 candidato_partido_2008 <- candidato_partido(candidatos_2008_df, eleicoes_municipais)
+candidato_partido_2008$CPF_CANDIDATO <- as.numeric(candidato_partido_2008$CPF_CANDIDATO)
 candidato_partido_2012 <- candidato_partido(candidatos_2012_df, eleicoes_municipais)
 candidato_partido_2010 <- candidato_partido(candidatos_2010_df, eleicoes_federais)
 candidato_partido_2014 <- candidato_partido(candidatos_2014_df, eleicoes_federais)
@@ -173,11 +172,6 @@ x <- mudanca_partido_federais %>%
   select(SIGLA_PARTIDO.x, SIGLA_PARTIDO.y, TRANSICAO_PARTIDOS, TRANSICAO_RESULTADOS, COUNT, DESC_SIT_TOT_TURNO.x, DESC_SIT_TOT_TURNO.y) %>%
   filter(COUNT != 0)
 
-ingresso_pt <- x %>%
-  filter(SIGLA_PARTIDO.y == "PT" & (DESC_SIT_TOT_TURNO.x == "NÃO ELEITO" | DESC_SIT_TOT_TURNO.x == "SUPLENTE"))
-ingresso_pmdb <- x %>%
-  filter(SIGLA_PARTIDO.y == "PMDB" & (DESC_SIT_TOT_TURNO.x == "NÃO ELEITO" | DESC_SIT_TOT_TURNO.x == "SUPLENTE"))
-
 rm(eleicoes_federais)
 rm(eleicoes_municipais)
 rm(mudanca_partido_federais)
@@ -188,3 +182,29 @@ rm(candidato_partido_2008)
 rm(candidato_partido_2012)
 rm(candidato_partido_2010)
 rm(candidato_partido_2014)
+
+
+x <- partido_bens_2014$TOTAL_PARTIDO
+h <- hist(x, col = "red")
+
+xfit<-seq(min(x),max(x),length=100) 
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x)) 
+yfit <- yfit*diff(h$mids[1:2])*length(x) 
+lines(xfit, yfit, col="blue", lwd=2)
+
+partido_bens_2014[which(partido_bens_2014$TOTAL_PARTIDO > 4000000000),]
+
+library(sm)
+
+plot(density(partido_bens_2008$TOTAL_PARTIDO))
+plot(density(partido_bens_2010$TOTAL_PARTIDO))
+plot(density(partido_bens_2014$TOTAL_PARTIDO))
+plot(density(partido_bens_2012$TOTAL_PARTIDO))
+
+range(partido_bens_2012$TOTAL_PARTIDO)
+summary(partido_bens_2012$TOTAL_PARTIDO)
+var(partido_bens_2012$TOTAL_PARTIDO)
+hist(partido_bens_2012$TOTAL_PARTIDO, breaks = 10)
+
+t.test(partido_bens_2012$TOTAL_PARTIDO, partido_bens_2008$TOTAL_PARTIDO, 
+       alternative = "two.sided")

@@ -88,3 +88,20 @@ cols_legenda <- c("DATA_GERACAO","HORA_GERACAO","ANO_ELEICAO","NUM_TURNO","DESCR
                   "SIGLA_UF","SIGLA_UE","NOME_UE","CODIGO_CARGO","DESCRICAO_CARGO",
                   "TIPO_LEGENDA","NUM_PARTIDO","SIGLA_PARTIDO","NOME_PARTIDO","SIGLA_COLIGACAO",
                   "NOME_COLIGACAO","COMPOSICAO_COLIGACAO","SEQUENCIAL_COLIGACAO")
+
+
+#### load datasets
+bens_2008_df <- load_files_on("bem_candidato_2008", with_col_names = cols_bem_candidato)
+bens_2008_df$SQ_CANDIDATO <- as.numeric(bens_2008_df$SQ_CANDIDATO)
+candidatos_2008_df <- load_files_on("consulta_cand_2008", with_col_names = cols_consulta_candidato_2010)
+candidatos_2008_df$SEQUENCIAL_CANDIDATO <- as.numeric(candidatos_2008_df$SEQUENCIAL_CANDIDATO)
+legendas_2008_df <- load_files_on("consulta_legendas_2008", with_col_names = cols_legenda)
+bens_2010_df <- load_files_on("bem_candidato_2010", with_col_names = cols_bem_candidato)
+candidatos_2010_df <- load_files_on("consulta_cand_2010", with_col_names = cols_consulta_candidato_2010)
+legendas_2010_df <- load_files_on("consulta_legendas_2010", with_col_names = cols_legenda)
+bens_2012_df <- load_files_on("bem_candidato_2012", with_col_names = cols_bem_candidato)
+candidatos_2012_df <- load_files_on("consulta_cand_2012", with_col_names = cols_consulta_candidato_2012)
+legendas_2012_df <- load_files_on("consulta_legendas_2012", with_col_names = cols_legenda)
+bens_2014_df <- load_files_on("bem_candidato_2014", with_col_names = cols_bem_candidato)
+candidatos_2014_df <- load_files_on("consulta_cand_2014", with_col_names = cols_consulta_candidato_2014)
+legendas_2014_df <- load_files_on("consulta_legendas_2014", with_col_names = cols_legenda)
