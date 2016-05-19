@@ -37,8 +37,8 @@ candidatos_por_ocupacao_2012_top <- plot_candidato_ocupacao(candidatos_2012_df, 
 candidatos_por_ocupacao_2014_top <- plot_candidato_ocupacao(candidatos_2014_df, "2014")
 
 # ocupacao x resultado
-ocupacao_resultado = function(df) {
-  df %>% 
+plot_resultado_ocupacao = function(df, year) {
+  df <- df %>% 
     group_by(DESCRICAO_OCUPACAO, DESC_SIT_TOT_TURNO) %>% 
     filter(!DESC_SIT_TOT_TURNO == "#NULO#" && 
              !DESC_SIT_TOT_TURNO == "#NE#" &&
@@ -47,33 +47,39 @@ ocupacao_resultado = function(df) {
     summarise(total = sum(n())) %>%
     arrange(DESCRICAO_OCUPACAO) %>%
     filter(!is.na(total))   
+  
+  png(file = paste0("resultado_ocupacao_",year,".png"),
+      width = 800, height = 800, units = "px")
+  
+  g <- ggplot(df, aes(x=DESCRICAO_OCUPACAO, y=total, fill=DESC_SIT_TOT_TURNO)) + 
+    theme(legend.title = element_blank(),
+          axis.text.x = element_text(angle = 90, hjust = 1)) +
+    scale_x_discrete("Área atuação") +
+    scale_y_continuous("No. Candidatos") + 
+    geom_bar(stat = "identity", position = "dodge") +
+    ggtitle(paste0("Relação candidatos por área de atuação x resultado eleições ", year))
+  
+  print(g)
+  dev.off()  
+  
+  df
 }
 
-ocupacao_resultado_2012_top <- ocupacao_resultado(candidatos_2012_df  %>% 
-                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2012_top$DESCRICAO_OCUPACAO))
-ocupacao_resultado_2010_top <- ocupacao_resultado(candidatos_2010_df  %>% 
-                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2010_top$DESCRICAO_OCUPACAO))
-ocupacao_resultado_2014_top <- ocupacao_resultado(candidatos_2014_df %>% 
-                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2014_top$DESCRICAO_OCUPACAO))
-ocupacao_resultado_2008_top <- ocupacao_resultado(candidatos_2008_df %>% 
+ocupacao_resultado_2012_top <- plot_resultado_ocupacao(candidatos_2012_df  %>% 
+                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2012_top$DESCRICAO_OCUPACAO), "2012")
+ocupacao_resultado_2010_top <- plot_resultado_ocupacao(candidatos_2010_df  %>% 
+                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2010_top$DESCRICAO_OCUPACAO), "2010")
+ocupacao_resultado_2014_top <- plot_resultado_ocupacao(candidatos_2014_df %>% 
+                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2014_top$DESCRICAO_OCUPACAO), "2014")
+ocupacao_resultado_2008_top <- plot_resultado_ocupacao(candidatos_2008_df %>% 
                                                     filter(nchar(DESC_SIT_TOT_TURNO) < 100) %>% 
-                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2008_top$DESCRICAO_OCUPACAO))
+                                                    filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2008_top$DESCRICAO_OCUPACAO), "2008")
 
 ocupacao_resultado_2008_top[which(nchar(DESC_SIT_TOT_TURNO) > 100),]$DESC_SIT_TOT_TURNO
 
 merge_municipais <- merge(ocupacao_resultado_2008_top, ocupacao_resultado_2012_top, by = c("DESCRICAO_OCUPACAO", "DESC_SIT_TOT_TURNO"))
-  
 merge_federais <- merge(ocupacao_resultado_2010_top, ocupacao_resultado_2014_top, by = c("DESCRICAO_OCUPACAO", "DESC_SIT_TOT_TURNO"))
-
 df <- merge_federais %>% gather(classe_ano, total, total.x:total.y)
-
-ggplot(ocupacao_resultado_2014_top, aes(x=DESCRICAO_OCUPACAO, y=total, fill=DESC_SIT_TOT_TURNO)) + 
-  theme(legend.title = element_blank(),
-        axis.text.x = element_text(angle = 90, hjust = 1)) +
-  scale_x_discrete("Área atuação") +
-  scale_y_continuous("No. Candidatos") + 
-  geom_bar(stat = "identity", position = "dodge") +
-  ggtitle("Relação candidatos por área de atuação x resultado eleições 2014")
 
 # cruzar numero deputados x eleitos por qp ou por media
 
