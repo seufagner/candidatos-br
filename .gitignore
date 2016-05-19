@@ -3,3 +3,4 @@ raw_data
 .Rhistory
 candidatos-br.RData
 plots
+*.png
