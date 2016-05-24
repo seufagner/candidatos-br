@@ -1,16 +1,22 @@
 library(ggplot2)
 library(dplyr)
 library(reshape2)
+library(RColorBrewer)
 source("tse_file_loader.R")
 
 #### candidatos por raça 2014 (unico ano com raça)
 candidatos_por_raca_2014 <- aggregate(candidatos_2014_df$CODIGO_COR_RACA, by=list(candidatos_2014_df$DESCRICAO_COR_RACA), FUN=sum)
-percents <- paste0(round(100*candidatos_por_raca_2014$x/sum(candidatos_por_raca_2014$x), 1), "%")
+percents <- paste0(round(100*candidatos_por_raca_2014$x/sum(candidatos_por_raca_2014$x), 1), "%", " (",candidatos_por_raca_2014$Group.1,")" )
 
-png(file = "plots/candidatos_raca_2014.png")
-pie(candidatos_por_raca_2014$x, labels = percents, main = "Candidatos por raça 2014",col = rainbow(length(candidatos_por_raca_2014$x)))
-legend("topleft", candidatos_por_raca_2014$Group.1, cex = 0.8,
-       fill = rainbow(length(candidatos_por_raca_2014$x)))
+png(file = "candidatos_raca_2014.png")
+l <- length(candidatos_por_raca_2014$x)
+
+ggplot(candidatos_por_raca_2014, aes(x=Group.1, y=x, fill=Group.1)) + 
+  xlab("") + 
+  ylab("") + 
+  geom_bar(stat = "identity") +
+  ggtitle("Candidatos por raça 2014")
+
 dev.off()
 rm(candidatos_por_raca_2014)
 
@@ -29,10 +35,6 @@ despesa_2012 <- calc_despesa(candidatos_2012_df)
 despesa_2014 <- calc_despesa(candidatos_2014_df)
 
 
-siglas <- intersect(despesa_2014$SIGLA_PARTIDO, despesa_2012$SIGLA_PARTIDO)
-
-overlap_bars_df <- data.frame(x=siglas, ano_2014=despesa_2014[SIGLA_PARTIDO %in% siglas]$total, ano_2012=despesa_2012[SIGLA_PARTIDO %in% siglas]$total)
-melted <- melt(overlap_bars_df, id="x")
 ggplot(melted, aes(x=x, y=value, fill=variable)) + 
   theme(legend.title = element_blank(),
         axis.text.x = element_text(angle = 90, hjust = 1)) +

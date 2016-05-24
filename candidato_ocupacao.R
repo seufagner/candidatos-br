@@ -71,15 +71,19 @@ ocupacao_resultado_2010_top <- plot_resultado_ocupacao(candidatos_2010_df  %>%
                                                     filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2010_top$DESCRICAO_OCUPACAO), "2010")
 ocupacao_resultado_2014_top <- plot_resultado_ocupacao(candidatos_2014_df %>% 
                                                     filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2014_top$DESCRICAO_OCUPACAO), "2014")
+
+# o arquivo do ano de 2008 está corrompido, por isso as clausulas filter
 ocupacao_resultado_2008_top <- plot_resultado_ocupacao(candidatos_2008_df %>% 
                                                     filter(nchar(DESC_SIT_TOT_TURNO) < 100) %>% 
                                                     filter(DESCRICAO_OCUPACAO %in% candidatos_por_ocupacao_2008_top$DESCRICAO_OCUPACAO), "2008")
 
-ocupacao_resultado_2008_top[which(nchar(DESC_SIT_TOT_TURNO) > 100),]$DESC_SIT_TOT_TURNO
-
-merge_municipais <- merge(ocupacao_resultado_2008_top, ocupacao_resultado_2012_top, by = c("DESCRICAO_OCUPACAO", "DESC_SIT_TOT_TURNO"))
-merge_federais <- merge(ocupacao_resultado_2010_top, ocupacao_resultado_2014_top, by = c("DESCRICAO_OCUPACAO", "DESC_SIT_TOT_TURNO"))
-df <- merge_federais %>% gather(classe_ano, total, total.x:total.y)
-
 # cruzar numero deputados x eleitos por qp ou por media
+# a partir de 2012 os levels para DESC_SIT_TOT_TURNO foram mais resumidos e nao vao 
+consolidar_resultado_formato_anterior_2012 = function(df) {
+  
+  
+  
+  
+}
 
+levels(as.factor(ocupacao_resultado_2012_top$DESC_SIT_TOT_TURNO))
